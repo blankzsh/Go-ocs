@@ -1,0 +1,20 @@
+{
+    "host": "127.0.0.1",
+    "port": 8000,
+    "platform": "aliyun",
+    "api_keys": {
+        "aliyun": "",
+        "siliconflow": ""
+    },
+    "models": {
+        "aliyun": "qwen-plus-latest",
+        "siliconflow": "deepseek-ai/DeepSeek-R1"
+    },
+    "mysql": {
+        "host": "127.0.0.1",
+        "port": 3306,
+        "user": "root",
+        "password": "password",
+        "database": "question_bank"
+    }
+}
