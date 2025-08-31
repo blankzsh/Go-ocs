@@ -13,7 +13,7 @@ AI题库系统Go语言重构版本，支持多种AI平台API调用。
 
 - Go 1.21+
 - Gin Web框架
-- SQLite3 数据库
+- MySQL 数据库
 - SiliconFlow API
 - 阿里云百炼平台API
 
@@ -23,6 +23,8 @@ AI题库系统Go语言重构版本，支持多种AI平台API调用。
 Go-ocs/
 ├── cmd/                 # 主程序入口
 ├── configs/             # 配置文件
+│   ├── config.example.json  # 示例配置文件
+│   └── config.json      # 实际配置文件（需手动创建）
 ├── internal/            # 内部模块
 │   ├── ai/              # AI服务相关
 │   ├── database/        # 数据库相关
@@ -44,15 +46,29 @@ Go-ocs/
    go mod tidy
    ```
 
-4. 修改配置文件 `configs/config.json`：
+4. 配置文件设置：
+   - 复制 [configs/config.example.json](file:///f:/Project/Go-ocs/configs/config.example.json) 为 `configs/config.json`
+   - 修改 `configs/config.json` 中的配置项：
    ```json
    {
        "host": "127.0.0.1",
        "port": 8000,
-       "api_key": "你的SiliconFlow API密钥",
-       "platform": "siliconflow",  // 可选: siliconflow 或 aliyun
-       "aliyun_api_key": "你的阿里云百炼API密钥",
-       "aliyun_model": "qwen-plus"
+       "platform": "siliconflow",
+       "api_keys": {
+           "aliyun": "your_aliyun_api_key_here",
+           "siliconflow": "your_siliconflow_api_key_here"
+       },
+       "models": {
+           "aliyun": "qwen-plus-latest",
+           "siliconflow": "deepseek-ai/DeepSeek-R1"
+       },
+       "mysql": {
+           "host": "127.0.0.1",
+           "port": 3306,
+           "user": "root",
+           "password": "your_mysql_password",
+           "database": "question_bank"
+       }
    }
    ```
 
@@ -78,10 +94,10 @@ curl "http://127.0.0.1:8000/api/query?title=中国的首都是哪里%3F&options=
 
 - `host`: 服务器监听地址
 - `port`: 服务器监听端口
-- `api_key`: SiliconFlow API密钥
 - `platform`: 使用的AI平台 (siliconflow 或 aliyun)
-- `aliyun_api_key`: 阿里云百炼API密钥
-- `aliyun_model`: 阿里云百炼使用的模型
+- `api_keys`: 各平台的API密钥
+- `models`: 各平台使用的模型
+- `mysql`: MySQL数据库配置
 
 ## 平台切换
 
