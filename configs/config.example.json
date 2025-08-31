@@ -2,9 +2,10 @@
     "host": "127.0.0.1",
     "port": 8000,
     "platform": "siliconflow",
-    "api_key": "your_api_key_here",
     "api_keys": {
+        "// Aliyun API key, get it from https://help.aliyun.com/zh/": "",
         "aliyun": "your_aliyun_api_key_here",
+        "// SiliconFlow API key, get it from https://console.siliconflow.cn/": "",
         "siliconflow": "your_siliconflow_api_key_here"
     },
     "models": {

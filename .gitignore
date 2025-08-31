@@ -1,0 +1,58 @@
+# Go build output
+bin/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go workspace
+_Go/
+go.work
+go.work.sum
+
+# Go modules
+go.mod
+go.sum
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+
+# Database
+*.db
+*.sqlite
+
+# Node.js dependencies (for API key manager)
+api-key/frontend/node_modules/
+api-key/backend/node_modules/
+
+# Build output (for API key manager frontend)
+api-key/frontend/dist/
+api-key/frontend/build/
+
+# Local configuration files
+configs/config.json
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

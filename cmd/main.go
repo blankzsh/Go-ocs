@@ -7,11 +7,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"log"
+	"net/http"
 	"path/filepath"
 )
 
 func main() {
+	// 加载.env文件
+	if err := godotenv.Load(); err != nil {
+		log.Println("未找到.env文件，将使用环境变量或默认值")
+	}
+
 	// 使用相对路径获取配置文件路径
 	configPath := filepath.Join("configs", "config.json")
 
@@ -26,6 +33,11 @@ func main() {
 		log.Fatalf("数据库初始化失败: %v", err)
 	}
 
+	// 初始化API密钥数据库
+	if err := handlers.InitAPIDB(); err != nil {
+		log.Fatalf("API密钥数据库初始化失败: %v", err)
+	}
+
 	// 设置Gin为发布模式（生产环境）
 	// gin.SetMode(gin.ReleaseMode)
 
@@ -33,7 +45,26 @@ func main() {
 	r := gin.Default()
 
 	// 注册路由
-	r.GET("/api/query", handlers.SearchAnswer(config))
+	r.GET("/api/query", handlers.APIKeyAuthWithDB(), handlers.SearchAnswer(config))
+
+	// 添加一个生成API密钥的管理端点（仅用于生成密钥，实际使用中应该有额外的保护）
+	r.POST("/api/generate-key", func(c *gin.Context) {
+		key, err := handlers.GenerateAPIKey()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code": 1,
+				"msg":  "生成API密钥失败",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"code": 0,
+			"msg":  "生成API密钥成功",
+			"data": gin.H{
+				"api_key": key,
+			},
+		})
+	})
 
 	// 打印API配置信息
 	printAPIConfig(config)
@@ -57,6 +88,7 @@ func printAPIConfig(config *models.Config) {
 			"title":   "${title}",
 			"options": "${options}",
 			"type":    "${type}",
+			"api-key": "YOUR_API_KEY_HERE", // 添加API密钥占位符
 		},
 		"handler": "return (res)=>res.code === 0 ? [undefined, undefined] : [undefined,res.data.data]",
 	}

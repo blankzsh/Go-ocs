@@ -4,10 +4,10 @@ AI题库系统Go语言重构版本，支持多种AI平台API调用。
 
 ## 功能特性
 
-- 题目答案自动生成
+- 题库查询API服务
 - 支持多种AI平台（硅基流动、阿里云百炼）
-- 本地数据库缓存答案
-- RESTful API接口
+- 本地数据库缓存
+- **API密钥验证机制**
 
 ## 技术栈
 
@@ -77,17 +77,29 @@ Go-ocs/
    go run cmd/main.go
    ```
 
-## API使用
+## API接口
 
-### 查询题目答案
+### 查询接口
 
-```
-GET /api/query?title=问题内容[&options=选项内容][&type=问题类型]
-```
+- 接口地址：`/api/query`
+- 请求方法：`GET`
+- 请求参数：
 
-示例：
-```
-curl "http://127.0.0.1:8000/api/query?title=中国的首都是哪里%3F&options=北京###上海###广州###深圳&type=选择题"
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| title | string | 是 | 题目内容 |
+| options | string | 否 | 选项内容 |
+| type | string | 否 | 题目类型 |
+| api_key | string | 是 | API密钥（可通过请求头或查询参数传递） |
+
+- 请求示例：
+
+```bash
+# 通过请求头传递API密钥
+curl -H "API-Key: YOUR_API_KEY" "http://localhost:8000/api/query?title=题目内容"
+
+# 通过查询参数传递API密钥
+curl "http://localhost:8000/api/query?api_key=YOUR_API_KEY&title=题目内容"
 ```
 
 ## 配置说明
@@ -104,3 +116,22 @@ curl "http://127.0.0.1:8000/api/query?title=中国的首都是哪里%3F&options=
 在配置文件中修改 `platform` 字段：
 - `siliconflow`: 使用硅基流动平台
 - `aliyun`: 使用阿里云百炼平台
+
+## 生成API密钥
+
+- 接口地址：`/api/generate-key`
+- 请求方法：`POST`
+- 请求示例：
+
+```bash
+curl -X POST http://localhost:8000/api/generate-key
+```
+
+## 安全说明
+
+API接口现在需要通过API密钥进行身份验证。请确保：
+
+1. 为每个客户端生成唯一的API密钥
+2. 通过请求头或查询参数传递API密钥
+3. 妥善保管API密钥，避免泄露
+4. 定期更换API密钥以确保安全

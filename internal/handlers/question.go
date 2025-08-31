@@ -4,12 +4,66 @@ import (
 	"ai-ocs/internal/ai"
 	"ai-ocs/internal/database"
 	"ai-ocs/internal/models"
+	"crypto/rand"
+	"encoding/hex"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
+
+// APIKeyAuth API密钥验证中间件
+func APIKeyAuth(config *models.Config) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 从请求头中获取API密钥
+		apiKey := c.GetHeader("API-Key")
+		if apiKey == "" {
+			// 如果请求头中没有，从查询参数中获取
+			apiKey = c.Query("api_key")
+		}
+
+		// 如果没有提供API密钥
+		if apiKey == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code": 1,
+				"msg":  "缺少API密钥",
+			})
+			c.Abort()
+			return
+		}
+
+		// 验证API密钥是否有效
+		valid := false
+		for _, key := range config.APIKeys {
+			if key == apiKey {
+				valid = true
+				break
+			}
+		}
+
+		if !valid {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code": 1,
+				"msg":  "无效的API密钥",
+			})
+			c.Abort()
+			return
+		}
+
+		// 验证通过，继续处理请求
+		c.Next()
+	}
+}
+
+// GenerateAPIKey 生成新的API密钥
+func GenerateAPIKey() (string, error) {
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
 
 // SearchAnswer 处理查询答案的请求
 func SearchAnswer(config *models.Config) gin.HandlerFunc {
