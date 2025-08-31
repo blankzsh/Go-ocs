@@ -1,0 +1,21 @@
+{
+    "host": "127.0.0.1",
+    "port": 8000,
+    "platform": "siliconflow",
+    "api_key": "your_api_key_here",
+    "api_keys": {
+        "aliyun": "your_aliyun_api_key_here",
+        "siliconflow": "your_siliconflow_api_key_here"
+    },
+    "models": {
+        "aliyun": "qwen-plus-latest",
+        "siliconflow": "deepseek-ai/DeepSeek-R1"
+    },
+    "mysql": {
+        "host": "127.0.0.1",
+        "port": 3306,
+        "user": "root",
+        "password": "your_mysql_password",
+        "database": "question_bank"
+    }
+}
