@@ -167,6 +167,38 @@ config_models() {
     echo "$model_name 的模型已更新为: $model_value"
 }
 
+# 配置数据库类型函数
+config_database() {
+    echo ""
+    echo "请选择数据库类型:"
+    echo "1. MySQL"
+    echo "2. SQLite"
+    echo ""
+
+    read -p "请选择 (1-2): " db_choice
+
+    case $db_choice in
+        1)
+            db_type="mysql"
+            echo "数据库类型设置为 MySQL"
+            ;;
+        2)
+            db_type="sqlite"
+            echo "数据库类型设置为 SQLite"
+            ;;
+        *)
+            echo "无效选项"
+            return
+            ;;
+    esac
+
+    # 使用sed更新数据库类型配置
+    sed -i.bak "s/\"database_type\": \"[^\"]*\"/\"database_type\": \"$db_type\"/g" configs/config.json
+    rm configs/config.json.bak 2>/dev/null || true
+    echo ""
+    echo "数据库类型已更新为: $db_type"
+}
+
 # 配置MySQL函数
 config_mysql() {
     echo ""
@@ -240,12 +272,13 @@ while true; do
     echo "1. 配置API平台"
     echo "2. 配置API密钥"
     echo "3. 配置模型"
-    echo "4. 配置MySQL数据库"
-    echo "5. 查看当前配置"
-    echo "6. 退出"
+    echo "4. 配置数据库"
+    echo "5. 配置MySQL数据库"
+    echo "6. 查看当前配置"
+    echo "7. 退出"
     echo ""
 
-    read -p "请输入选项 (1-6): " choice
+    read -p "请输入选项 (1-7): " choice
 
     case $choice in
         1)
@@ -258,12 +291,15 @@ while true; do
             config_models
             ;;
         4)
-            config_mysql
+            config_database
             ;;
         5)
-            view_config
+            config_mysql
             ;;
         6)
+            view_config
+            ;;
+        7)
             echo "感谢使用Go-ocsBase配置工具！"
             exit 0
             ;;

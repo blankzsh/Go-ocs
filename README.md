@@ -6,14 +6,15 @@ AI题库系统Go语言重构版本，支持多种AI平台API调用。
 
 - 题目答案自动生成
 - 支持多种AI平台（硅基流动、阿里云百炼、智普AI、Ollama、DeepSeek、ChatGPT、Gemini）
-- 本地数据库缓存答案
+- 本地数据库缓存答案（支持MySQL和SQLite）
 - RESTful API接口
+- 数据库自由切换（MySQL/SQLite）
 
 ## 技术栈
 
 - Go 1.21+
 - Gin Web框架
-- MySQL 数据库
+- MySQL 数据库 / SQLite 数据库
 - 多种AI平台API：
   - SiliconFlow API
   - 阿里云百炼平台API
@@ -62,6 +63,7 @@ Go-ocs/
        "host": "127.0.0.1",
        "port": 8000,
        "platform": "siliconflow",
+       "database_type": "mysql",
        "api_keys": {
            "aliyun": "your_aliyun_api_key_here",
            "siliconflow": "your_siliconflow_api_key_here",
@@ -85,6 +87,9 @@ Go-ocs/
            "user": "root",
            "password": "your_mysql_password",
            "database": "question_bank"
+       },
+       "sqlite": {
+           "path": "question_bank.db"
        }
    }
    ```
@@ -112,9 +117,11 @@ curl "http://127.0.0.1:8000/api/query?title=中国的首都是哪里%3F&options=
 - `host`: 服务器监听地址
 - `port`: 服务器监听端口
 - `platform`: 使用的AI平台
+- `database_type`: 数据库类型（mysql 或 sqlite）
 - `api_keys`: 各平台的API密钥
 - `models`: 各平台使用的模型
 - `mysql`: MySQL数据库配置
+- `sqlite`: SQLite数据库配置
 
 ## 平台切换
 
@@ -126,6 +133,14 @@ curl "http://127.0.0.1:8000/api/query?title=中国的首都是哪里%3F&options=
 - `deepseek`: 使用DeepSeek官方API
 - `chatgpt`: 使用ChatGPT API
 - `gemini`: 使用Gemini API
+
+## 数据库切换
+
+在配置文件中修改 `database_type` 字段：
+- `mysql`: 使用MySQL数据库
+- `sqlite`: 使用SQLite数据库
+
+SQLite数据库无需额外安装，文件会自动创建在配置指定的路径。
 
 ## 配置工具
 
@@ -153,6 +168,7 @@ powershell -ExecutionPolicy Bypass -File .\configurator_zh.ps1
 - 选择AI平台
 - 配置各平台API密钥
 - 设置各平台使用的模型
+- 选择数据库类型（MySQL/SQLite）
 - 配置MySQL数据库连接
 - 查看当前配置
 

@@ -10,12 +10,16 @@ type Config struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
 	Platform string `json:"platform"`
+	// 数据库类型 (mysql 或 sqlite)
+	DatabaseType string `json:"database_type"`
 	// API密钥配置
 	APIKeys map[string]string `json:"api_keys"`
 	// 模型配置
 	Models map[string]string `json:"models"`
 	// MySQL配置
 	MySQLConfig MySQLConfig `json:"mysql"`
+	// SQLite配置
+	SQLiteConfig SQLiteConfig `json:"sqlite"`
 }
 
 // MySQLConfig MySQL数据库配置
@@ -25,6 +29,11 @@ type MySQLConfig struct {
 	User     string `json:"user"`
 	Password string `json:"password"`
 	Database string `json:"database"`
+}
+
+// SQLiteConfig SQLite数据库配置
+type SQLiteConfig struct {
+	Path string `json:"path"`
 }
 
 // LoadConfig 从文件加载配置
@@ -43,6 +52,11 @@ func LoadConfig(filePath string) (*Config, error) {
 	// 设置默认值
 	if config.Platform == "" {
 		config.Platform = "siliconflow"
+	}
+
+	// 设置默认数据库类型
+	if config.DatabaseType == "" {
+		config.DatabaseType = "mysql"
 	}
 
 	// 初始化APIKeys映射
@@ -124,6 +138,11 @@ func LoadConfig(filePath string) (*Config, error) {
 
 	if config.MySQLConfig.Database == "" {
 		config.MySQLConfig.Database = "question_bank"
+	}
+
+	// 设置SQLite默认值
+	if config.SQLiteConfig.Path == "" {
+		config.SQLiteConfig.Path = "question_bank.db"
 	}
 
 	return &config, nil

@@ -2,7 +2,7 @@
     "host": "127.0.0.1",
     "port": 8000,
     "platform": "siliconflow",
-    "api_key": "your_api_key_here",
+    "database_type": "mysql",
     "api_keys": {
         "aliyun": "your_aliyun_api_key_here",
         "siliconflow": "your_siliconflow_api_key_here",
@@ -17,8 +17,8 @@
         "zhipu": "glm-4",
         "ollama": "llama3",
         "deepseek": "deepseek-chat",
-        "chatgpt": "gpt-4o",
-        "gemini": "gemini-2.5-pro"
+        "chatgpt": "gpt-3.5-turbo",
+        "gemini": "gemini-pro"
     },
     "mysql": {
         "host": "127.0.0.1",
@@ -26,5 +26,8 @@
         "user": "root",
         "password": "your_mysql_password",
         "database": "question_bank"
+    },
+    "sqlite": {
+        "path": "question_bank.db"
     }
 }

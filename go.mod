@@ -7,6 +7,7 @@ toolchain go1.22.4
 require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-sql-driver/mysql v1.9.3
+	github.com/mattn/go-sqlite3 v1.14.32
 )
 
 require (

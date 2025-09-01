@@ -10,9 +10,10 @@ function Show-MainMenu {
     Write-Host "1. Configure API Platform" -ForegroundColor White
     Write-Host "2. Configure API Keys" -ForegroundColor White
     Write-Host "3. Configure Models" -ForegroundColor White
-    Write-Host "4. Configure MySQL Database" -ForegroundColor White
-    Write-Host "5. View Current Configuration" -ForegroundColor White
-    Write-Host "6. Exit" -ForegroundColor White
+    Write-Host "4. Configure Database" -ForegroundColor White
+    Write-Host "5. Configure MySQL Database" -ForegroundColor White
+    Write-Host "6. View Current Configuration" -ForegroundColor White
+    Write-Host "7. Exit" -ForegroundColor White
     Write-Host ""
 }
 
@@ -161,6 +162,40 @@ function Configure-Models {
     Write-Host "Model for $modelName has been updated to: $modelValue" -ForegroundColor Green
 }
 
+# Function to configure database type
+function Configure-Database {
+    Write-Host ""
+    Write-Host "Please select a database type:" -ForegroundColor Cyan
+    Write-Host "1. MySQL" -ForegroundColor White
+    Write-Host "2. SQLite" -ForegroundColor White
+    Write-Host ""
+
+    $dbChoice = Read-Host "Please select (1-2)"
+
+    switch ($dbChoice) {
+        "1" { 
+            $dbType = "mysql"
+            Write-Host "Database type set to MySQL" -ForegroundColor Yellow
+        }
+        "2" { 
+            $dbType = "sqlite"
+            Write-Host "Database type set to SQLite" -ForegroundColor Yellow
+        }
+        default { 
+            Write-Host "Invalid option" -ForegroundColor Red
+            return
+        }
+    }
+
+    # Read config file and update database type
+    $config = Get-Content "configs\config.json" -Raw | ConvertFrom-Json
+    $config.database_type = $dbType
+    $config | ConvertTo-Json -Depth 10 | Set-Content "configs\config.json" -Encoding UTF8
+
+    Write-Host ""
+    Write-Host "Database type has been updated to: $dbType" -ForegroundColor Green
+}
+
 # Function to configure MySQL
 function Configure-MySQL {
     Write-Host ""
@@ -223,15 +258,16 @@ if (-not (Test-Path "configs\config.json")) {
 # Main loop
 while ($true) {
     Show-MainMenu
-    $choice = Read-Host "Please enter your choice (1-6)"
+    $choice = Read-Host "Please enter your choice (1-7)"
 
     switch ($choice) {
         "1" { Configure-Platform }
         "2" { Configure-ApiKeys }
         "3" { Configure-Models }
-        "4" { Configure-MySQL }
-        "5" { View-Config }
-        "6" { 
+        "4" { Configure-Database }
+        "5" { Configure-MySQL }
+        "6" { View-Config }
+        "7" { 
             Write-Host ""
             Write-Host "Thank you for using Go-ocsBase Configuration Tool!" -ForegroundColor Green
             exit 0

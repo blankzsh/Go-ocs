@@ -6,9 +6,10 @@ import (
 	"ai-ocs/internal/models"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"path/filepath"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -51,7 +52,7 @@ func printAPIConfig(config *models.Config) {
 		"url":         fmt.Sprintf("http://%s:%d/api/query", config.Host, config.Port),
 		"method":      "get",
 		"type":        "GM_xmlhttpRequest",
-		"homepage":    "https://currso.com/",
+		"homepage":    "https://blog.currso.com/",
 		"contentType": "json",
 		"data": map[string]string{
 			"title":   "${title}",

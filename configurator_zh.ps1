@@ -10,9 +10,10 @@ function Show-MainMenu {
     Write-Host "1. 配置API平台" -ForegroundColor White
     Write-Host "2. 配置API密钥" -ForegroundColor White
     Write-Host "3. 配置模型" -ForegroundColor White
-    Write-Host "4. 配置MySQL数据库" -ForegroundColor White
-    Write-Host "5. 查看当前配置" -ForegroundColor White
-    Write-Host "6. 退出" -ForegroundColor White
+    Write-Host "4. 配置数据库" -ForegroundColor White
+    Write-Host "5. 配置MySQL数据库" -ForegroundColor White
+    Write-Host "6. 查看当前配置" -ForegroundColor White
+    Write-Host "7. 退出" -ForegroundColor White
     Write-Host ""
 }
 
@@ -161,6 +162,40 @@ function Configure-Models {
     Write-Host "$modelName 的模型已更新为: $modelValue" -ForegroundColor Green
 }
 
+# 配置数据库类型函数
+function Configure-Database {
+    Write-Host ""
+    Write-Host "请选择数据库类型:" -ForegroundColor Cyan
+    Write-Host "1. MySQL" -ForegroundColor White
+    Write-Host "2. SQLite" -ForegroundColor White
+    Write-Host ""
+
+    $dbChoice = Read-Host "请选择 (1-2)"
+
+    switch ($dbChoice) {
+        "1" { 
+            $dbType = "mysql"
+            Write-Host "数据库类型设置为 MySQL" -ForegroundColor Yellow
+        }
+        "2" { 
+            $dbType = "sqlite"
+            Write-Host "数据库类型设置为 SQLite" -ForegroundColor Yellow
+        }
+        default { 
+            Write-Host "无效选项" -ForegroundColor Red
+            return
+        }
+    }
+
+    # 读取配置文件并更新数据库类型
+    $config = Get-Content "configs\config.json" -Raw | ConvertFrom-Json
+    $config.database_type = $dbType
+    $config | ConvertTo-Json -Depth 10 | Set-Content "configs\config.json" -Encoding UTF8
+
+    Write-Host ""
+    Write-Host "数据库类型已更新为: $dbType" -ForegroundColor Green
+}
+
 # 配置MySQL函数
 function Configure-MySQL {
     Write-Host ""
@@ -223,15 +258,16 @@ if (-not (Test-Path "configs\config.json")) {
 # 主循环
 while ($true) {
     Show-MainMenu
-    $choice = Read-Host "请输入选项 (1-6)"
+    $choice = Read-Host "请输入选项 (1-7)"
 
     switch ($choice) {
         "1" { Configure-Platform }
         "2" { Configure-ApiKeys }
         "3" { Configure-Models }
-        "4" { Configure-MySQL }
-        "5" { View-Config }
-        "6" { 
+        "4" { Configure-Database }
+        "5" { Configure-MySQL }
+        "6" { View-Config }
+        "7" { 
             Write-Host ""
             Write-Host "感谢使用Go-ocsBase配置工具！" -ForegroundColor Green
             exit 0
