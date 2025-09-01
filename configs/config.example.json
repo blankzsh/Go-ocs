@@ -5,11 +5,20 @@
     "api_key": "your_api_key_here",
     "api_keys": {
         "aliyun": "your_aliyun_api_key_here",
-        "siliconflow": "your_siliconflow_api_key_here"
+        "siliconflow": "your_siliconflow_api_key_here",
+        "zhipu": "your_zhipu_api_key_here",
+        "deepseek": "your_deepseek_api_key_here",
+        "chatgpt": "your_chatgpt_api_key_here",
+        "gemini": "your_gemini_api_key_here"
     },
     "models": {
         "aliyun": "qwen-plus-latest",
-        "siliconflow": "deepseek-ai/DeepSeek-R1"
+        "siliconflow": "deepseek-ai/DeepSeek-R1",
+        "zhipu": "glm-4",
+        "ollama": "llama3",
+        "deepseek": "deepseek-chat",
+        "chatgpt": "gpt-4o",
+        "gemini": "gemini-2.5-pro"
     },
     "mysql": {
         "host": "127.0.0.1",

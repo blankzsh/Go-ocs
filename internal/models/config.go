@@ -58,6 +58,22 @@ func LoadConfig(filePath string) (*Config, error) {
 	if config.APIKeys["aliyun"] == "" {
 		config.APIKeys["aliyun"] = ""
 	}
+	
+	if config.APIKeys["zhipu"] == "" {
+		config.APIKeys["zhipu"] = ""
+	}
+	
+	if config.APIKeys["deepseek"] == "" {
+		config.APIKeys["deepseek"] = ""
+	}
+	
+	if config.APIKeys["chatgpt"] == "" {
+		config.APIKeys["chatgpt"] = ""
+	}
+	
+	if config.APIKeys["gemini"] == "" {
+		config.APIKeys["gemini"] = ""
+	}
 
 	// 初始化Models映射
 	if config.Models == nil {
@@ -71,6 +87,26 @@ func LoadConfig(filePath string) (*Config, error) {
 
 	if config.Models["aliyun"] == "" {
 		config.Models["aliyun"] = "qwen-plus"
+	}
+	
+	if config.Models["zhipu"] == "" {
+		config.Models["zhipu"] = "glm-4"
+	}
+	
+	if config.Models["ollama"] == "" {
+		config.Models["ollama"] = "llama3"
+	}
+	
+	if config.Models["deepseek"] == "" {
+		config.Models["deepseek"] = "deepseek-chat"
+	}
+	
+	if config.Models["chatgpt"] == "" {
+		config.Models["chatgpt"] = "gpt-3.5-turbo"
+	}
+	
+	if config.Models["gemini"] == "" {
+		config.Models["gemini"] = "gemini-pro"
 	}
 
 	// 设置MySQL默认值

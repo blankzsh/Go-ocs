@@ -1,0 +1,71 @@
+# Go build output
+/bin/
+/build/
+/bin/
+
+# Go workspace
+_GoLand/
+_*GoLand*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Configuration files (local)
+configs/config.json
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Test coverage
+coverage.txt
+coverage.html
+
+# Dependency directories
+vendor/
+
+# Editor backup files
+*~
+.*.swp
+.*.swo
+
+# macOS
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.DocumentRevisions-V100
+.Metadata
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+ehthumbs_vista.db
+ehthumbs.db
+Thumbs.db
+*.tmp
+*.temp
