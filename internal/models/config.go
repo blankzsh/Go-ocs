@@ -20,6 +20,8 @@ type Config struct {
 	MySQLConfig MySQLConfig `json:"mysql"`
 	// SQLite配置
 	SQLiteConfig SQLiteConfig `json:"sqlite"`
+	// 管理员账户配置
+	Admin AdminConfig `json:"admin"`
 }
 
 // MySQLConfig MySQL数据库配置
@@ -34,6 +36,12 @@ type MySQLConfig struct {
 // SQLiteConfig SQLite数据库配置
 type SQLiteConfig struct {
 	Path string `json:"path"`
+}
+
+// AdminConfig 管理员账户配置
+type AdminConfig struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 // LoadConfig 从文件加载配置
@@ -143,6 +151,11 @@ func LoadConfig(filePath string) (*Config, error) {
 	// 设置SQLite默认值
 	if config.SQLiteConfig.Path == "" {
 		config.SQLiteConfig.Path = "question_bank.db"
+	}
+
+	// 设置管理员账户默认值
+	if config.Admin.Username == "" {
+		config.Admin.Username = "admin"
 	}
 
 	return &config, nil

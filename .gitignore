@@ -69,3 +69,6 @@ ehthumbs.db
 Thumbs.db
 *.tmp
 *.temp
+
+#blog
+blog.md

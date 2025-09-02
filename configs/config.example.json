@@ -20,6 +20,10 @@
         "chatgpt": "gpt-3.5-turbo",
         "gemini": "gemini-pro"
     },
+    "admin": {
+        "username": "admin",
+        "password": "$2a$10$XovBFarUSNyp/Ux.DYOwqu/zGKyU3XbVEM6qKhS2U9Nq9WxxNpgk6"
+    },
     "mysql": {
         "host": "127.0.0.1",
         "port": 3306,

@@ -119,7 +119,8 @@ func initSchema() error {
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`
 		
-		createIndexSQL = `CREATE INDEX idx_question ON question_answer(question);`
+		// 为MySQL的TEXT字段指定索引长度
+		createIndexSQL = `CREATE INDEX idx_question ON question_answer(question(255));`
 	}
 
 	_, err := db.Exec(createTableSQL)
