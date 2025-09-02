@@ -773,6 +773,18 @@ func AdminPage(c *gin.Context) {
             color: #6c757d;
             font-size: 0.9em;
         }
+        .api-key-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        .api-key-stat {
+            font-size: 0.9em;
+        }
+        .api-key-call-count {
+            color: #007bff;
+            font-weight: bold;
+        }
         @media (max-width: 768px) {
             .stats-container {
                 flex-direction: column;
@@ -1154,10 +1166,21 @@ func AdminPage(c *gin.Context) {
             apiKeys.forEach(key => {
                 const keyElement = document.createElement('div');
                 keyElement.className = 'api-key-item';
+                
+                // 格式化最后使用时间
+                let lastUsedText = '从未使用';
+                if (key.last_used_at) {
+                    lastUsedText = new Date(key.last_used_at).toLocaleString('zh-CN');
+                }
+                
                 keyElement.innerHTML = 
                     '<div>' +
                         '<div class="api-key-description">' + escapeHtml(key.description || '未命名密钥') + '</div>' +
                         '<div class="api-key-value">' + key.api_key + '</div>' +
+                        '<div class="api-key-stats">' +
+                            '<div class="api-key-stat">调用次数: <span class="api-key-call-count">' + (key.call_count || 0) + '</span></div>' +
+                            '<div class="api-key-stat">最后使用: <span class="api-key-date">' + lastUsedText + '</span></div>' +
+                        '</div>' +
                         '<div class="api-key-date">创建时间: ' + new Date(key.created_at).toLocaleString('zh-CN') + '</div>' +
                     '</div>' +
                     '<div>' +

@@ -106,6 +106,7 @@ func initSchema() error {
 	var createTableSQL string
 	var createIndexSQL string
 	var createAPIKeyTableSQL string
+	var createAPIKeyUsageTableSQL string
 	
 	// 根据数据库类型选择合适的SQL语法
 	if dbType == "sqlite" {
@@ -129,6 +130,15 @@ func initSchema() error {
 			description TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);`
+		
+		createAPIKeyUsageTableSQL = `
+		CREATE TABLE IF NOT EXISTS api_key_usage (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			api_key_id INTEGER NOT NULL,
+			call_count INTEGER DEFAULT 0,
+			last_used_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (api_key_id) REFERENCES api_keys(id) ON DELETE CASCADE
+		);`
 	} else {
 		// MySQL语法
 		createTableSQL = `
@@ -151,6 +161,15 @@ func initSchema() error {
 			description TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`
+		
+		createAPIKeyUsageTableSQL = `
+		CREATE TABLE IF NOT EXISTS api_key_usage (
+			id INTEGER PRIMARY KEY AUTO_INCREMENT,
+			api_key_id INTEGER NOT NULL,
+			call_count INTEGER DEFAULT 0,
+			last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (api_key_id) REFERENCES api_keys(id) ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`
 	}
 
 	_, err := db.Exec(createTableSQL)
@@ -166,6 +185,12 @@ func initSchema() error {
 	
 	// 创建API密钥表
 	_, err = db.Exec(createAPIKeyTableSQL)
+	if err != nil {
+		return err
+	}
+	
+	// 创建API密钥使用统计表
+	_, err = db.Exec(createAPIKeyUsageTableSQL)
 	if err != nil {
 		return err
 	}
@@ -338,7 +363,18 @@ func GetDefaultAPIKey() (string, error) {
 
 // GetAllAPIKeys 获取所有API密钥
 func GetAllAPIKeys() ([]*models.APIKey, error) {
-	rows, err := db.Query("SELECT id, api_key, description, created_at FROM api_keys ORDER BY created_at DESC")
+	rows, err := db.Query(`
+		SELECT 
+			k.id, 
+			k.api_key, 
+			k.description, 
+			k.created_at,
+			COALESCE(u.call_count, 0) as call_count,
+			u.last_used_at
+		FROM api_keys k
+		LEFT JOIN api_key_usage u ON k.id = u.api_key_id
+		ORDER BY k.created_at DESC
+	`)
 	if err != nil {
 		return nil, err
 	}
@@ -347,10 +383,18 @@ func GetAllAPIKeys() ([]*models.APIKey, error) {
 	var apiKeys []*models.APIKey
 	for rows.Next() {
 		var apiKey models.APIKey
-		err := rows.Scan(&apiKey.ID, &apiKey.APIKey, &apiKey.Description, &apiKey.CreatedAt)
+		var lastUsedAt sql.NullTime
+		err := rows.Scan(&apiKey.ID, &apiKey.APIKey, &apiKey.Description, &apiKey.CreatedAt, &apiKey.CallCount, &lastUsedAt)
 		if err != nil {
 			return nil, err
 		}
+		
+		if lastUsedAt.Valid {
+			apiKey.LastUsedAt = lastUsedAt.Time
+		} else {
+			apiKey.LastUsedAt = apiKey.CreatedAt
+		}
+		
 		apiKeys = append(apiKeys, &apiKey)
 	}
 
@@ -406,5 +450,45 @@ func DeleteAPIKey(id int64) error {
 
 	// 删除API密钥
 	_, err = db.Exec("DELETE FROM api_keys WHERE id = ?", id)
+	return err
+}
+
+// IncrementAPIKeyUsage 增加API密钥调用次数
+func IncrementAPIKeyUsage(apiKey string) error {
+	// 获取API密钥ID
+	var keyID int64
+	err := db.QueryRow("SELECT id FROM api_keys WHERE api_key = ?", apiKey).Scan(&keyID)
+	if err != nil {
+		return err
+	}
+
+	// 检查是否已存在使用记录
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM api_key_usage WHERE api_key_id = ?", keyID).Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	// 根据数据库类型选择合适的时间函数
+	timeFunc := "NOW()"
+	if dbType == "sqlite" {
+		timeFunc = "DATETIME('now')"
+	}
+
+	if count > 0 {
+		// 如果已存在记录，则更新调用次数和最后使用时间
+		_, err = db.Exec(`
+			UPDATE api_key_usage 
+			SET call_count = call_count + 1, last_used_at = `+timeFunc+`
+			WHERE api_key_id = ?
+		`, keyID)
+	} else {
+		// 如果不存在记录，则插入新记录
+		_, err = db.Exec(`
+			INSERT INTO api_key_usage (api_key_id, call_count, last_used_at)
+			VALUES (?, 1, `+timeFunc+`)
+		`, keyID)
+	}
+
 	return err
 }

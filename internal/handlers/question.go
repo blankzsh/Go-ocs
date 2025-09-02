@@ -42,6 +42,13 @@ func SearchAnswer(config *models.Config) gin.HandlerFunc {
 			return
 		}
 
+		// 增加API密钥调用次数统计
+		err = database.IncrementAPIKeyUsage(apiKey)
+		if err != nil {
+			// 记录错误但不中断流程
+			log.Printf("增加API密钥调用次数失败: %v", err)
+		}
+
 		// 先从数据库查询答案
 		answer, err := database.GetAnswer(title)
 		if err != nil {

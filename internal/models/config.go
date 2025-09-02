@@ -51,6 +51,8 @@ type APIKey struct {
 	APIKey      string    `json:"api_key"`
 	Description string    `json:"description"`
 	CreatedAt   time.Time `json:"created_at"`
+	CallCount   int64     `json:"call_count"`     // 调用次数
+	LastUsedAt  time.Time `json:"last_used_at"`   // 最后使用时间
 }
 
 // LoadConfig 从文件加载配置
