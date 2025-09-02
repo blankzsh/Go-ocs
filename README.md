@@ -9,6 +9,7 @@ AI题库系统Go语言重构版本，支持多种AI平台API调用。
 - 本地数据库缓存答案（支持MySQL和SQLite）
 - RESTful API接口
 - 数据库自由切换（MySQL/SQLite）
+- 管理后台界面（带登录验证）
 
 ## 技术栈
 
@@ -81,6 +82,10 @@ Go-ocs/
            "chatgpt": "gpt-3.5-turbo",
            "gemini": "gemini-pro"
        },
+       "admin": {
+           "username": "admin",
+           "password": "$2a$10$XovBFarUSNyp/Ux.DYOwqu/zGKyU3XbVEM6qKhS2U9Nq9WxxNpgk6"
+       },
        "mysql": {
            "host": "127.0.0.1",
            "port": 3306,
@@ -112,6 +117,25 @@ GET /api/query?title=问题内容[&options=选项内容][&type=问题类型]
 curl "http://127.0.0.1:8000/api/query?title=中国的首都是哪里%3F&options=北京###上海###广州###深圳&type=选择题"
 ```
 
+## 管理后台
+
+项目包含一个Web管理后台，可用于查看题目统计、搜索题目等。
+
+访问地址：`http://服务器地址:端口/admin/`
+
+默认管理员账户：
+- 用户名：`admin`
+- 密码：`admin123`
+
+注意：为安全起见，建议在生产环境中修改默认密码。
+
+### 管理后台功能
+
+- 系统统计信息展示
+- 题目列表查看（支持分页）
+- 关键词搜索题目
+- 会话管理（登录/登出）
+
 ## 配置说明
 
 - `host`: 服务器监听地址
@@ -120,6 +144,7 @@ curl "http://127.0.0.1:8000/api/query?title=中国的首都是哪里%3F&options=
 - `database_type`: 数据库类型（mysql 或 sqlite）
 - `api_keys`: 各平台的API密钥
 - `models`: 各平台使用的模型
+- `admin`: 管理员账户配置
 - `mysql`: MySQL数据库配置
 - `sqlite`: SQLite数据库配置
 
@@ -187,3 +212,10 @@ powershell -ExecutionPolicy Bypass -File .\configurator_zh.ps1
 ### 配置文件管理
 - [configs/config.example.json](file:///f:/WEB-PR/Go-ocsBase/configs/config.example.json)：示例配置文件，包含所有配置项的模板
 - `configs/config.json`：实际配置文件，不会被版本控制，需要用户根据示例文件手动创建
+
+## 安全说明
+
+1. 管理员账户的密码使用bcrypt加密存储，即使在配置文件中也不会明文保存
+2. 会话管理采用安全策略，包括HttpOnly标志、SameSite策略等
+3. 未登录用户访问管理后台会自动重定向到登录页面
+4. 建议在生产环境中使用HTTPS协议，并设置相应的安全选项
