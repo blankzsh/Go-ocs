@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"os"
+	"time"
 )
 
 // Config 应用配置结构体
@@ -42,6 +43,14 @@ type SQLiteConfig struct {
 type AdminConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+// APIKey API密钥结构
+type APIKey struct {
+	ID          int64     `json:"id"`
+	APIKey      string    `json:"api_key"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // LoadConfig 从文件加载配置

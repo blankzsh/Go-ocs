@@ -18,10 +18,27 @@ func SearchAnswer(config *models.Config) gin.HandlerFunc {
 		title := strings.TrimSpace(c.Query("title"))
 		options := c.Query("options")
 		questionType := c.Query("type")
+		apiKey := c.Query("api-key")
 
 		// 参数校验
 		if title == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "题目不能为空"})
+			return
+		}
+
+		// 验证API密钥（现在是必须项）
+		if apiKey == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 1, "msg": "API密钥不能为空"})
+			return
+		}
+		
+		valid, err := database.ValidateAPIKey(apiKey)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "验证API密钥时出错"})
+			return
+		}
+		if !valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 1, "msg": "无效的API密钥"})
 			return
 		}
 

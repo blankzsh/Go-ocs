@@ -36,7 +36,7 @@ func main() {
 
 	// 注册API路由
 	r.GET("/api/query", handlers.SearchAnswer(config))
-	r.GET("/api/test", handlers.TestHandler)              // 添加测试接口
+	r.GET("/api/test", handlers.TestHandler) // 添加测试接口
 	r.GET("/api/test-answer", handlers.TestAnswerHandler) // 添加测试答题接口
 
 	// 注册管理后台路由
@@ -49,6 +49,9 @@ func main() {
 		admin.GET("/stats", handlers.RequireAuth, handlers.GetStats)
 		admin.GET("/questions", handlers.RequireAuth, handlers.GetQuestions)
 		admin.GET("/search", handlers.RequireAuth, handlers.SearchQuestion)
+		admin.GET("/apikeys", handlers.RequireAuth, handlers.GetAPIKeys)
+		admin.POST("/apikeys", handlers.RequireAuth, handlers.CreateAPIKey)
+		admin.DELETE("/apikeys/:id", handlers.RequireAuth, handlers.DeleteAPIKey)
 	}
 
 	// 启动服务器
@@ -83,9 +86,16 @@ func printAPIConfig(config *models.Config, actualPort int) {
 		host = "127.0.0.1"
 	}
 
+	// 获取默认API密钥
+	defaultAPIKey, err := database.GetDefaultAPIKey()
+	if err != nil {
+		log.Printf("获取默认API密钥失败: %v", err)
+		defaultAPIKey = "生成api-key"
+	}
+
 	// 构造API配置信息
 	url := fmt.Sprintf("http://%s:%d/api/query", host, actualPort)
-	jsonStr := fmt.Sprintf("{\n  \"name\": \"完美题库\",\n  \"homepage\": \"https://currso.com/\",\n  \"url\": \"%s\",\n  \"method\": \"get\",\n  \"type\": \"GM_xmlhttpRequest\",\n  \"contentType\": \"json\",\n  \"data\": {\n    \"title\": \"${title}\",\n    \"options\": \"${options}\",\n    \"type\": \"${type}\"\n  },\n  \"handler\": \"return (res)=>res.code === 0 ? [undefined, undefined] : [undefined,res.data.data]\"\n}", url)
+	jsonStr := fmt.Sprintf("{\n  \"name\": \"完美题库\",\n  \"homepage\": \"https://currso.com/\",\n  \"url\": \"%s\",\n  \"method\": \"get\",\n  \"type\": \"GM_xmlhttpRequest\",\n  \"contentType\": \"json\",\n  \"data\": {\n    \"title\": \"${title}\",\n    \"options\": \"${options}\",\n    \"type\": \"${type}\",\n    \"api-key\": \"%s\"\n  },\n  \"handler\": \"return (res)=>res.code === 0 ? [undefined, undefined] : [undefined,res.data.data]\"\n}", url, defaultAPIKey)
 
 	log.Printf("API配置信息:\n%s", jsonStr)
 }

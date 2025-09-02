@@ -2,6 +2,8 @@
 
 AI题库系统Go语言重构版本，支持多种AI平台API调用。
 
+版本：v1.4.0
+
 ## 功能特性
 
 - 题目答案自动生成
@@ -10,6 +12,8 @@ AI题库系统Go语言重构版本，支持多种AI平台API调用。
 - RESTful API接口
 - 数据库自由切换（MySQL/SQLite）
 - 管理后台界面（带登录验证）
+- API密钥验证系统
+- API密钥管理界面
 
 ## 技术栈
 
@@ -37,7 +41,8 @@ Go-ocs/
 │   ├── ai/              # AI服务相关
 │   ├── database/        # 数据库相关
 │   ├── handlers/        # HTTP处理器
-│   └── models/          # 数据模型
+│   ├── models/          # 数据模型
+│   └── tools/           # 工具脚本
 ├── .gitignore           # Git忽略文件
 ├── go.mod              # Go模块定义
 ├── go.sum              # Go模块校验和
@@ -109,13 +114,15 @@ Go-ocs/
 ### 查询题目答案
 
 ```
-GET /api/query?title=问题内容[&options=选项内容][&type=问题类型]
+GET /api/query?title=问题内容[&options=选项内容][&type=问题类型][&api-key=API密钥]
 ```
 
 示例：
 ```
-curl "http://127.0.0.1:8000/api/query?title=中国的首都是哪里%3F&options=北京###上海###广州###深圳&type=选择题"
+curl "http://127.0.0.1:8000/api/query?title=中国的首都是哪里%3F&options=北京###上海###广州###深圳&type=选择题&api-key=生成api-key"
 ```
+
+注意：**API密钥是必需的，必须提供有效的密钥才能访问API。**
 
 ## 管理后台
 
@@ -135,6 +142,58 @@ curl "http://127.0.0.1:8000/api/query?title=中国的首都是哪里%3F&options=
 - 题目列表查看（支持分页）
 - 关键词搜索题目
 - 会话管理（登录/登出）
+- API密钥管理（创建、查看、删除API密钥）
+
+## API密钥系统
+
+为了提高API安全性，系统引入了API密钥验证机制：
+
+1. 系统启动时会自动生成一个默认的API密钥并存储在数据库中
+2. 在启动日志中会打印包含API密钥的完整配置信息
+3. 调用API时必须使用`api-key`参数传递API密钥进行验证
+4. 系统会验证API密钥的有效性；无效的密钥将被拒绝访问
+5. 可以通过管理后台界面创建、查看和删除API密钥
+
+## 测试工具
+
+项目提供了一个Python测试工具，用于交互式测试生成的API配置信息是否能正常使用：
+
+### 使用方法
+
+1. 确保已安装Python 3和requests库：
+   ```bash
+   pip install requests
+   ```
+
+2. 启动服务并获取API配置信息：
+   ```bash
+   go run cmd/main.go
+   ```
+
+3. 从启动日志中复制API配置信息
+
+4. 将配置信息保存为 `api_config.json` 文件
+
+5. 运行Python测试工具：
+   ```bash
+   python test_api_config.py api_config.json
+   ```
+
+### 功能特点
+
+- 交互式界面，易于使用
+- 支持从文件加载或手动输入API配置
+- 可自定义测试参数（题目、选项、题型、API密钥）
+- 显示详细的请求和响应信息
+- 支持重新加载配置和修改测试参数
+- 提供响应数据解析功能
+
+### 命令行参数
+
+运行测试工具时可以指定配置文件路径：
+```bash
+python test_api_config.py [配置文件路径]
+```
 
 ## 配置说明
 
@@ -218,4 +277,9 @@ powershell -ExecutionPolicy Bypass -File .\configurator_zh.ps1
 1. 管理员账户的密码使用bcrypt加密存储，即使在配置文件中也不会明文保存
 2. 会话管理采用安全策略，包括HttpOnly标志、SameSite策略等
 3. 未登录用户访问管理后台会自动重定向到登录页面
-4. 建议在生产环境中使用HTTPS协议，并设置相应的安全选项
+4. API密钥存储在数据库中，提供访问控制机制
+5. 建议在生产环境中使用HTTPS协议，并设置相应的安全选项
+
+## 版本历史
+
+详细版本更新信息请查看 [RELEASE_NOTES.md](file:///f:/WEB-PR/Go-ocsBase/RELEASE_NOTES.md) 文件。

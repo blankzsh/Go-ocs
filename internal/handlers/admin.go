@@ -30,6 +30,11 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// APIKeyRequest API密钥请求结构
+type APIKeyRequest struct {
+	Description string `json:"description" binding:"required"`
+}
+
 // Login 登录处理
 func Login(c *gin.Context) {
 	var req LoginRequest
@@ -312,6 +317,64 @@ func SearchQuestion(c *gin.Context) {
 		"total": total,
 		"page":  page,
 		"limit": limit,
+	})
+}
+
+// GetAPIKeys 获取所有API密钥
+func GetAPIKeys(c *gin.Context) {
+	apiKeys, err := database.GetAllAPIKeys()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "无法获取API密钥列表: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": apiKeys,
+	})
+}
+
+// CreateAPIKey 创建新的API密钥
+func CreateAPIKey(c *gin.Context) {
+	var req APIKeyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误: " + err.Error()})
+		return
+	}
+
+	apiKey, err := database.CreateAPIKey(req.Description)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "无法创建API密钥: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "API密钥创建成功",
+		"data":    apiKey,
+	})
+}
+
+// DeleteAPIKey 删除API密钥
+func DeleteAPIKey(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的API密钥ID"})
+		return
+	}
+
+	err = database.DeleteAPIKey(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "无法删除API密钥: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "API密钥删除成功",
 	})
 }
 
@@ -635,6 +698,81 @@ func AdminPage(c *gin.Context) {
         .pagination .current {
             background: #5a6fd8;
         }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            color: #333;
+        }
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        .tab button.active {
+            background-color: #667eea;
+            color: white;
+        }
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            background-color: white;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .api-key-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #eee;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .api-key-value {
+            font-family: monospace;
+            word-break: break-all;
+            background: #f8f9fa;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .api-key-description {
+            font-weight: bold;
+        }
+        .api-key-date {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
         @media (max-width: 768px) {
             .stats-container {
                 flex-direction: column;
@@ -659,48 +797,72 @@ func AdminPage(c *gin.Context) {
     </div>
 
     <div class="container">
-        <h2>系统统计</h2>
-        <div class="stats-container">
-            <div class="stat-card">
-                <div class="stat-number" id="totalQuestions">0</div>
-                <div class="stat-label">总题目数</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="lastUpdated">-</div>
-                <div class="stat-label">最后更新</div>
-            </div>
+        <div class="tab">
+            <button class="tablinks active" onclick="openTab(event, 'dashboard')">仪表盘</button>
+            <button class="tablinks" onclick="openTab(event, 'questions')">题目管理</button>
+            <button class="tablinks" onclick="openTab(event, 'apikeys')">API密钥管理</button>
         </div>
-    </div>
 
-    <div class="container">
-        <h2>题目查询</h2>
-        <div class="search-container">
-            <div class="search-box">
-                <input type="text" id="searchKeyword" placeholder="输入关键词搜索题目...">
-                <button onclick="searchQuestions()">搜索</button>
-                <button onclick="loadAllQuestions()">显示全部</button>
+        <div id="dashboard" class="tabcontent" style="display: block;">
+            <h2>系统统计</h2>
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalQuestions">0</div>
+                    <div class="stat-label">总题目数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="lastUpdated">-</div>
+                    <div class="stat-label">最后更新</div>
+                </div>
             </div>
         </div>
 
-        <div id="loading" class="loading hidden">加载中...</div>
-        <div id="error" class="error hidden"></div>
-        
-        <table id="questionsTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>题目</th>
-                    <th>答案</th>
-                    <th>创建时间</th>
-                </tr>
-            </thead>
-            <tbody id="questionsBody">
-                <!-- 数据将通过JavaScript动态加载 -->
-            </tbody>
-        </table>
-        
-        <div class="pagination" id="pagination">
-            <!-- 分页控件将通过JavaScript动态加载 -->
+        <div id="questions" class="tabcontent">
+            <h2>题目查询</h2>
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" id="searchKeyword" placeholder="输入关键词搜索题目...">
+                    <button onclick="searchQuestions()">搜索</button>
+                    <button onclick="loadAllQuestions()">显示全部</button>
+                </div>
+            </div>
+
+            <div id="loading" class="loading hidden">加载中...</div>
+            <div id="error" class="error hidden"></div>
+            
+            <table id="questionsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>题目</th>
+                        <th>答案</th>
+                        <th>创建时间</th>
+                    </tr>
+                </thead>
+                <tbody id="questionsBody">
+                    <!-- 数据将通过JavaScript动态加载 -->
+                </tbody>
+            </table>
+            
+            <div class="pagination" id="pagination">
+                <!-- 分页控件将通过JavaScript动态加载 -->
+            </div>
+        </div>
+
+        <div id="apikeys" class="tabcontent">
+            <h2>API密钥管理</h2>
+            <div class="form-group">
+                <label for="apiKeyDescription">密钥描述</label>
+                <input type="text" id="apiKeyDescription" placeholder="请输入密钥描述">
+            </div>
+            <button onclick="createAPIKey()">创建新的API密钥</button>
+            
+            <div id="apiKeyLoading" class="loading hidden">加载中...</div>
+            <div id="apiKeyError" class="error hidden"></div>
+            
+            <div id="apiKeysList">
+                <!-- API密钥列表将通过JavaScript动态加载 -->
+            </div>
         </div>
     </div>
 
@@ -713,6 +875,7 @@ func AdminPage(c *gin.Context) {
         document.addEventListener('DOMContentLoaded', function() {
             loadStats();
             loadAllQuestions();
+            loadAPIKeys();
         });
 
         // 获取统计数据
@@ -934,6 +1097,142 @@ func AdminPage(c *gin.Context) {
             .catch(error => {
                 console.error('登出失败:', error);
                 window.location.href = '/admin/login';
+            });
+        }
+
+        // Tab切换功能
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+            
+            // 如果切换到API密钥管理标签，重新加载数据
+            if (tabName === 'apikeys') {
+                loadAPIKeys();
+            }
+        }
+
+        // API密钥管理功能
+        function loadAPIKeys() {
+            const loading = document.getElementById('apiKeyLoading');
+            const error = document.getElementById('apiKeyError');
+            const list = document.getElementById('apiKeysList');
+            
+            loading.classList.remove('hidden');
+            error.classList.add('hidden');
+            list.innerHTML = '';
+            
+            fetch('/admin/apikeys')
+                .then(response => response.json())
+                .then(data => {
+                    loading.classList.add('hidden');
+                    if (data.data && data.data.length > 0) {
+                        renderAPIKeys(data.data);
+                    } else {
+                        list.innerHTML = '<p>暂无API密钥</p>';
+                    }
+                })
+                .catch(err => {
+                    loading.classList.add('hidden');
+                    error.textContent = '加载API密钥失败: ' + err.message;
+                    error.classList.remove('hidden');
+                });
+        }
+
+        function renderAPIKeys(apiKeys) {
+            const list = document.getElementById('apiKeysList');
+            list.innerHTML = '';
+            
+            apiKeys.forEach(key => {
+                const keyElement = document.createElement('div');
+                keyElement.className = 'api-key-item';
+                keyElement.innerHTML = 
+                    '<div>' +
+                        '<div class="api-key-description">' + escapeHtml(key.description || '未命名密钥') + '</div>' +
+                        '<div class="api-key-value">' + key.api_key + '</div>' +
+                        '<div class="api-key-date">创建时间: ' + new Date(key.created_at).toLocaleString('zh-CN') + '</div>' +
+                    '</div>' +
+                    '<div>' +
+                        '<button class="btn btn-danger" onclick="deleteAPIKey(' + key.id + ')">删除</button>' +
+                    '</div>';
+                list.appendChild(keyElement);
+            });
+        }
+
+        function createAPIKey() {
+            const description = document.getElementById('apiKeyDescription').value.trim();
+            if (!description) {
+                alert('请输入密钥描述');
+                return;
+            }
+            
+            const loading = document.getElementById('apiKeyLoading');
+            const error = document.getElementById('apiKeyError');
+            
+            loading.classList.remove('hidden');
+            error.classList.add('hidden');
+            
+            fetch('/admin/apikeys', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ description: description })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.add('hidden');
+                if (data.message) {
+                    document.getElementById('apiKeyDescription').value = '';
+                    loadAPIKeys();
+                } else if (data.error) {
+                    error.textContent = data.error;
+                    error.classList.remove('hidden');
+                }
+            })
+            .catch(err => {
+                loading.classList.add('hidden');
+                error.textContent = '创建API密钥失败: ' + err.message;
+                error.classList.remove('hidden');
+            });
+        }
+
+        function deleteAPIKey(id) {
+            if (!confirm('确定要删除这个API密钥吗？')) {
+                return;
+            }
+            
+            const loading = document.getElementById('apiKeyLoading');
+            const error = document.getElementById('apiKeyError');
+            
+            loading.classList.remove('hidden');
+            error.classList.add('hidden');
+            
+            fetch('/admin/apikeys/' + id, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.add('hidden');
+                if (data.message) {
+                    loadAPIKeys();
+                } else if (data.error) {
+                    error.textContent = data.error;
+                    error.classList.remove('hidden');
+                }
+            })
+            .catch(err => {
+                loading.classList.add('hidden');
+                error.textContent = '删除API密钥失败: ' + err.message;
+                error.classList.remove('hidden');
             });
         }
     </script>

@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"ai-ocs/internal/models"
+	"crypto/rand"
+	"encoding/hex"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
@@ -41,6 +44,16 @@ func InitDB(config *models.Config) error {
 	// 初始化表结构
 	if err := initSchema(); err != nil {
 		return fmt.Errorf("初始化数据库表失败: %v", err)
+	}
+	
+	// 检查并修复api_keys表结构
+	if err := checkAndFixAPIKeyTable(); err != nil {
+		return fmt.Errorf("检查并修复api_keys表失败: %v", err)
+	}
+
+	// 确保至少有一个API密钥存在
+	if err := ensureAPIKey(); err != nil {
+		return fmt.Errorf("初始化API密钥失败: %v", err)
 	}
 
 	log.Printf("数据库连接成功，使用 %s 数据库", dbType)
@@ -92,6 +105,7 @@ func initSQLite(config models.SQLiteConfig) (*sql.DB, error) {
 func initSchema() error {
 	var createTableSQL string
 	var createIndexSQL string
+	var createAPIKeyTableSQL string
 	
 	// 根据数据库类型选择合适的SQL语法
 	if dbType == "sqlite" {
@@ -107,6 +121,14 @@ func initSchema() error {
 		);`
 		
 		createIndexSQL = `CREATE INDEX IF NOT EXISTS idx_question ON question_answer(question);`
+		
+		createAPIKeyTableSQL = `
+		CREATE TABLE IF NOT EXISTS api_keys (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			api_key TEXT NOT NULL UNIQUE,
+			description TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);`
 	} else {
 		// MySQL语法
 		createTableSQL = `
@@ -121,6 +143,14 @@ func initSchema() error {
 		
 		// 为MySQL的TEXT字段指定索引长度
 		createIndexSQL = `CREATE INDEX idx_question ON question_answer(question(255));`
+		
+		createAPIKeyTableSQL = `
+		CREATE TABLE IF NOT EXISTS api_keys (
+			id INTEGER PRIMARY KEY AUTO_INCREMENT,
+			api_key VARCHAR(64) NOT NULL UNIQUE,
+			description TEXT,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`
 	}
 
 	_, err := db.Exec(createTableSQL)
@@ -133,9 +163,114 @@ func initSchema() error {
 		// 如果索引已存在，忽略错误
 		log.Printf("创建索引时出现警告（可能已存在）: %v", err)
 	}
+	
+	// 创建API密钥表
+	_, err = db.Exec(createAPIKeyTableSQL)
+	if err != nil {
+		return err
+	}
 
 	log.Println("数据库表初始化成功")
 	return nil
+}
+
+// checkAndFixAPIKeyTable 检查并修复api_keys表结构
+func checkAndFixAPIKeyTable() error {
+	// 检查api_keys表是否存在api_key字段
+	var count int
+	query := ""
+	
+	if dbType == "sqlite" {
+		query = "SELECT COUNT(*) FROM pragma_table_info('api_keys') WHERE name='api_key'"
+	} else {
+		// MySQL
+		query = "SELECT COUNT(*) FROM information_schema.columns WHERE table_name='api_keys' AND column_name='api_key'"
+	}
+	
+	err := db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return err
+	}
+	
+	// 如果api_key字段不存在，则尝试修复表结构
+	if count == 0 {
+		log.Println("检测到api_keys表结构不正确，尝试修复...")
+		
+		if dbType == "sqlite" {
+			// SQLite修复方法
+			_, err = db.Exec("DROP TABLE IF EXISTS api_keys")
+			if err != nil {
+				return err
+			}
+			
+			_, err = db.Exec(`
+				CREATE TABLE api_keys (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					api_key TEXT NOT NULL UNIQUE,
+					description TEXT,
+					created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+				);`)
+			if err != nil {
+				return err
+			}
+		} else {
+			// MySQL修复方法
+			_, err = db.Exec("DROP TABLE IF EXISTS api_keys")
+			if err != nil {
+				return err
+			}
+			
+			_, err = db.Exec(`
+				CREATE TABLE api_keys (
+					id INTEGER PRIMARY KEY AUTO_INCREMENT,
+					api_key VARCHAR(64) NOT NULL UNIQUE,
+					description TEXT,
+					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`)
+			if err != nil {
+				return err
+			}
+		}
+		
+		log.Println("api_keys表结构已修复")
+	}
+	
+	return nil
+}
+
+// ensureAPIKey 确保至少有一个API密钥存在
+func ensureAPIKey() error {
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM api_keys").Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	// 如果没有API密钥，则生成一个默认的
+	if count == 0 {
+		apiKey, err := generateAPIKey()
+		if err != nil {
+			return err
+		}
+		
+		_, err = db.Exec("INSERT INTO api_keys (api_key, description) VALUES (?, ?)", apiKey, "默认API密钥")
+		if err != nil {
+			return err
+		}
+		
+		log.Printf("已生成默认API密钥: %s", apiKey)
+	}
+	
+	return nil
+}
+
+// generateAPIKey 生成一个新的API密钥
+func generateAPIKey() (string, error) {
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }
 
 // GetDB 获取数据库连接实例
@@ -178,5 +313,98 @@ func SaveAnswer(question, answer string) error {
 		_, err = db.Exec("INSERT INTO question_answer (question, answer) VALUES (?, ?)", question, answer)
 	}
 	
+	return err
+}
+
+// ValidateAPIKey 验证API密钥是否有效
+func ValidateAPIKey(apiKey string) (bool, error) {
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM api_keys WHERE api_key = ?", apiKey).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// GetDefaultAPIKey 获取默认API密钥
+func GetDefaultAPIKey() (string, error) {
+	var apiKey string
+	err := db.QueryRow("SELECT api_key FROM api_keys ORDER BY created_at ASC LIMIT 1").Scan(&apiKey)
+	if err != nil {
+		return "", err
+	}
+	return apiKey, nil
+}
+
+// GetAllAPIKeys 获取所有API密钥
+func GetAllAPIKeys() ([]*models.APIKey, error) {
+	rows, err := db.Query("SELECT id, api_key, description, created_at FROM api_keys ORDER BY created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var apiKeys []*models.APIKey
+	for rows.Next() {
+		var apiKey models.APIKey
+		err := rows.Scan(&apiKey.ID, &apiKey.APIKey, &apiKey.Description, &apiKey.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		apiKeys = append(apiKeys, &apiKey)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return apiKeys, nil
+}
+
+// CreateAPIKey 创建新的API密钥
+func CreateAPIKey(description string) (*models.APIKey, error) {
+	// 生成新的API密钥
+	key, err := generateAPIKey()
+	if err != nil {
+		return nil, err
+	}
+
+	// 插入到数据库
+	result, err := db.Exec("INSERT INTO api_keys (api_key, description) VALUES (?, ?)", key, description)
+	if err != nil {
+		return nil, err
+	}
+
+	// 获取插入的ID
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	// 返回新创建的API密钥信息
+	return &models.APIKey{
+		ID:          id,
+		APIKey:      key,
+		Description: description,
+		CreatedAt:   time.Now(),
+	}, nil
+}
+
+// DeleteAPIKey 删除指定的API密钥
+func DeleteAPIKey(id int64) error {
+	// 检查是否是最后一个API密钥
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM api_keys").Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	// 如果只有一个API密钥，不允许删除
+	if count <= 1 {
+		return fmt.Errorf("不能删除最后一个API密钥")
+	}
+
+	// 删除API密钥
+	_, err = db.Exec("DELETE FROM api_keys WHERE id = ?", id)
 	return err
 }
